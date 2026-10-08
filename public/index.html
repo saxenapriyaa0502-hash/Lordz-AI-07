@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>LORDZ AI</title>
+
+
+<style>
+
+/* =========================================
+   BASIC SETTINGS
+========================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+body {
+
+    background: #000;
+
+    color: white;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    overflow: hidden;
+}
+
+
+/* =========================================
+   LORDZ AI INTRO
+========================================= */
+
+#intro {
+
+    position: fixed;
+
+    inset: 0;
+
+    background: #000;
+
+    z-index: 9999;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    animation:
+        introOut 1.2s ease 7s forwards;
+}
+
+
+.intro-content {
+
+    text-align: center;
+
+    width: 100%;
+}
+
+
+#introLogo {
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 2px;
+
+    color: #E50914;
+
+    font-size:
+        clamp(55px, 14vw, 150px);
+
+    font-weight: 900;
+
+    letter-spacing: -5px;
+
+    text-shadow:
+
+        0 0 5px #E50914,
+
+        0 0 15px #E50914,
+
+        0 0 35px #E50914;
+}
+
+
+/* Individual letters */
+
+.intro-letter {
+
+    opacity: 0;
+
+    display: inline-block;
+
+    transform: scale(0.1)
+               translateY(50px);
+
+    filter: blur(15px);
+
+    animation:
+        letterShow
+        0.55s
+        cubic-bezier(.17,.67,.3,1.4)
+        forwards;
+}
+
+
+/* L */
+
+.intro-letter:nth-child(1) {
+    animation-delay: 0.2s;
+}
+
+/* O */
+
+.intro-letter:nth-child(2) {
+    animation-delay: 0.7s;
+}
+
+/* R */
+
+.intro-letter:nth-child(3) {
+    animation-delay: 1.2s;
+}
+
+/* D */
+
+.intro-letter:nth-child(4) {
+    animation-delay: 1.7s;
+}
+
+/* Z */
+
+.intro-letter:nth-child(5) {
+    animation-delay: 2.2s;
+}
+
+
+/* AI */
+
+.intro-ai {
+
+    opacity: 0;
+
+    margin-left: 18px;
+
+    font-size: 0.55em;
+
+    animation:
+        aiShow
+        0.8s
+        ease
+        2.7s
+        forwards;
+}
+
+
+/* Creator */
+
+.creator {
+
+    margin-top: 25px;
+
+    color: #E50914;
+
+    font-size:
+        clamp(12px, 2vw, 22px);
+
+    font-weight: bold;
+
+    letter-spacing: 6px;
+
+    opacity: 0;
+
+    animation:
+        creatorShow
+        1s
+        ease
+        3.5s
+        forwards;
+}
+
+
+/* =========================================
+   INTRO ANIMATIONS
+========================================= */
+
+@keyframes letterShow {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            scale(0.1)
+            translateY(50px);
+
+        filter: blur(15px);
+    }
+
+    70% {
+
+        transform:
+            scale(1.15);
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform:
+            scale(1);
+
+        filter: blur(0);
+    }
+}
+
+
+@keyframes aiShow {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            scale(0.2);
+
+        filter: blur(20px);
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform:
+            scale(1);
+
+        filter: blur(0);
+    }
+}
+
+
+@keyframes creatorShow {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            translateY(20px);
+
+        letter-spacing: 20px;
+
+        filter: blur(10px);
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform:
+            translateY(0);
+
+        letter-spacing: 6px;
+
+        filter: blur(0);
+    }
+}
+
+
+@keyframes introOut {
+
+    to {
+
+        opacity: 0;
+
+        visibility: hidden;
+    }
+}
+
+
+/* =========================================
+   MAIN LORDZ AI INTERFACE
+========================================= */
+
+#app {
+
+    width: 100%;
+
+    height: 100vh;
+
+    background: #000;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/* =========================================
+   TOP NAVIGATION
+========================================= */
+
+.top-bar {
+
+    width: 100%;
+
+    height: 72px;
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    z-index: 100;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding:
+        0 25px;
+
+    background:
+        rgba(0,0,0,0.95);
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,0.08);
+}
+
+
+/* =========================================
+   TOP LEFT LORDZ AI
+========================================= */
+
+.brand {
+
+    color: #E50914;
+
+    font-size: 25px;
+
+    font-weight: 900;
+
+    letter-spacing: 1px;
+
+    text-shadow:
+
+        0 0 8px
+        rgba(229,9,20,0.7);
+
+    cursor: pointer;
+
+    user-select: none;
+}
+
+
+.brand span {
+
+    color: white;
+
+    margin-left: 4px;
+}
+
+
+/* =========================================
+   TOP RIGHT ACCOUNT
+========================================= */
+
+.account-area {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+}
+
+
+/* Login / Signup */
+
+.account-button {
+
+    border: 1px solid
+            #E50914;
+
+    background: transparent;
+
+    color: white;
+
+    padding:
+        9px 15px;
+
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    font-size: 13px;
+
+    transition: 0.3s;
+}
+
+
+.account-button:hover {
+
+    background: #E50914;
+
+    box-shadow:
+        0 0 15px
+        rgba(229,9,20,0.5);
+}
+
+
+/* =========================================
+   PROFILE
+========================================= */
+
+.profile {
+
+    display: none;
+
+    align-items: center;
+
+    gap: 10px;
+
+    cursor: pointer;
+
+    position: relative;
+}
+
+
+.profile-avatar {
+
+    width: 40px;
+
+    height: 40px;
+
+    border-radius: 50%;
+
+    background: #E50914;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-weight: bold;
+
+    overflow: hidden;
+
+    border:
+        2px solid
+        #E50914;
+
+    box-shadow:
+        0 0 12px
+        rgba(229,9,20,0.5);
+}
+
+
+.profile-avatar img {
+
+    width: 100%;
+
+    height: 100%;
+
+    object-fit: cover;
+}
+
+
+.profile-name {
+
+    font-size: 14px;
+
+    color: #ddd;
+}
+
+
+/* =========================================
+   PROFILE MENU
+========================================= */
+
+.profile-menu {
+
+    display: none;
+
+    position: absolute;
+
+    top: 52px;
+
+    right: 0;
+
+    width: 170px;
+
+    background: #111;
+
+    border:
+        1px solid #333;
+
+    border-radius: 10px;
+
+    padding: 10px;
+
+    box-shadow:
+        0 10px 30px
+        rgba(0,0,0,0.7);
+}
+
+
+.profile-menu button {
+
+    width: 100%;
+
+    background: transparent;
+
+    border: none;
+
+    color: white;
+
+    padding: 11px;
+
+    text-align: left;
+
+    cursor: pointer;
+
+    border-radius: 6px;
+}
+
+
+.profile-menu button:hover {
+
+    background: #222;
+
+    color: #E50914;
+}
+
+
+/* =========================================
+   CHAT AREA
+========================================= */
+
+.chat-area {
+
+    width: min(900px, 92%);
+
+    flex: 1;
+
+    margin:
+        72px auto 0;
+
+    padding:
+        40px 0 100px;
+
+    overflow-y: auto;
+}
+
+
+.welcome {
+
+    text-align: center;
+
+    margin-top: 15vh;
+
+    margin-bottom: 40px;
+}
+
+
+.welcome h1 {
+
+    font-size:
+        clamp(28px, 6vw, 55px);
+}
+
+
+.welcome h1 span {
+
+    color: #E50914;
+}
+
+
+.welcome p {
+
+    margin-top: 12px;
+
+    color: #777;
+
+    font-size: 15px;
+}
+
+
+/* =========================================
+   CHAT MESSAGES
+========================================= */
+
+#chatBox {
+
+    width: 100%;
+}
+
+
+.message {
+
+    max-width: 75%;
+
+    padding:
+        13px 17px;
+
+    margin:
+        12px 0;
+
+    border-radius: 15px;
+
+    line-height: 1.5;
+
+    font-size: 15px;
+}
+
+
+.user {
+
+    margin-left: auto;
+
+    background: #E50914;
+
+    color: white;
+
+    border-bottom-right-radius: 4px;
+
+    box-shadow:
+        0 0 15px
+        rgba(229,9,20,0.15);
+}
+
+
+.ai {
+
+    margin-right: auto;
+
+    background: #151515;
+
+    border:
+        1px solid #292929;
+
+    color: #eee;
+
+    border-bottom-left-radius: 4px;
+}
+
+
+/* =========================================
+   INPUT
+========================================= */
+
+.input-container {
+
+    position: fixed;
+
+    bottom: 18px;
+
+    left: 50%;
+
+    transform:
+        translateX(-50%);
+
+    width:
+        min(900px, 92%);
+
+    display: flex;
+
+    gap: 10px;
+
+    z-index: 50;
+}
+
+
+#userInput {
+
+    flex: 1;
+
+    height: 52px;
+
+    border-radius: 30px;
+
+    border:
+        1px solid #333;
+
+    outline: none;
+
+    background: #101010;
+
+    color: white;
+
+    padding:
+        0 20px;
+
+    font-size: 15px;
+}
+
+
+#userInput:focus {
+
+    border-color:
+        #E50914;
+
+    box-shadow:
+        0 0 15px
+        rgba(229,9,20,0.2);
+}
+
+
+.send-button {
+
+    height: 52px;
+
+    padding:
+        0 24px;
+
+    border: none;
+
+    border-radius: 30px;
+
+    background:
+        #E50914;
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+
+    transition: 0.3s;
+}
+
+
+.send-button:hover {
+
+    background: #ff1722;
+
+    transform:
+        scale(1.04);
+
+    box-shadow:
+        0 0 20px
+        rgba(229,9,20,0.5);
+}
+
+
+/* =========================================
+   LOGIN MODAL
+========================================= */
+
+.modal {
+
+    display: none;
+
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 500;
+
+    background:
+        rgba(0,0,0,0.88);
+
+    justify-content: center;
+
+    align-items: center;
+}
+
+
+.modal-box {
+
+    width:
+        min(400px, 90%);
+
+    background: #111;
+
+    border:
+        1px solid #333;
+
+    border-radius: 15px;
+
+    padding: 30px;
+
+    box-shadow:
+        0 0 40px
+        rgba(229,9,20,0.2);
+}
+
+
+.modal-box h2 {
+
+    color: #E50914;
+
+    text-align: center;
+
+    margin-bottom: 25px;
+}
+
+
+.modal-box input {
+
+    width: 100%;
+
+    height: 45px;
+
+    margin-bottom: 12px;
+
+    padding: 0 14px;
+
+    border-radius: 7px;
+
+    border:
+        1px solid #333;
+
+    background: #050505;
+
+    color: white;
+
+    outline: none;
+}
+
+
+.modal-box input:focus {
+
+    border-color:
+        #E50914;
+}
+
+
+.modal-box button {
+
+    width: 100%;
+
+    height: 45px;
+
+    margin-top: 8px;
+
+    border: none;
+
+    border-radius: 7px;
+
+    background:
+        #E50914;
+
+    color: white;
+
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+.close {
+
+    text-align: center;
+
+    margin-top: 15px;
+
+    color: #888;
+
+    cursor: pointer;
+
+    font-size: 13px;
+}
+
+
+.close:hover {
+
+    color: white;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media(max-width:600px) {
+
+    .top-bar {
+
+        padding:
+            0 15px;
+    }
+
+    .brand {
+
+        font-size: 20px;
+    }
+
+    .profile-name {
+
+        display: none;
+    }
+
+    .account-button {
+
+        padding:
+            8px 10px;
+
+        font-size: 11px;
+    }
+
+    .message {
+
+        max-width: 88%;
+    }
+
+    .send-button {
+
+        padding:
+            0 17px;
+    }
+
+    .creator {
+
+        letter-spacing: 3px;
+    }
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<!-- =====================================
+     LORDZ INTRO
+===================================== -->
+
+<div id="intro">
+
+    <div class="intro-content">
+
+        <div id="introLogo">
+
+            <span class="intro-letter">L</span>
+            <span class="intro-letter">O</span>
+            <span class="intro-letter">R</span>
+            <span class="intro-letter">D</span>
+            <span class="intro-letter">Z</span>
+
+            <span class="intro-ai">
+                AI
+            </span>
+
+        </div>
+
+
+        <div class="creator">
+
+            MADE BY SWASTIK SAXENA
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =====================================
+     MAIN APPLICATION
+===================================== -->
+
+<div id="app">
+
+
+    <!-- TOP BAR -->
+
+    <header class="top-bar">
+
+
+        <!-- LEFT -->
+
+        <div class="brand">
+
+            LORDZ <span>AI</span>
+
+        </div>
+
+
+        <!-- RIGHT -->
+
+        <div class="account-area">
+
+
+            <!-- Shown when user is NOT logged in -->
+
+            <div id="guestButtons">
+
+                <button
+                    class="account-button"
+                    onclick="openModal('login')">
+
+                    LOGIN
+
+                </button>
+
+
+                <button
+                    class="account-button"
+                    onclick="openModal('signup')">
+
+                    SIGN UP
+
+                </button>
+
+            </div>
+
+
+
+            <!-- Shown after login -->
+
+            <div
+                class="profile"
+                id="profile"
+                onclick="toggleProfileMenu()">
+
+
+                <div
+                    class="profile-avatar"
+                    id="profileAvatar">
+
+                    S
+
+                </div>
+
+
+                <div
+                    class="profile-name"
+                    id="profileName">
+
+                    Swastik
+
+                </div>
+
+
+                <div
+                    class="profile-menu"
+                    id="profileMenu">
+
+
+                    <button
+                        onclick="logout()">
+
+                        Logout
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- CHAT -->
+
+    <section class="chat-area">
+
+
+        <div class="welcome">
+
+            <h1>
+
+                Welcome to
+                <span>LORDZ AI</span>
+
+            </h1>
+
+
+            <p>
+
+                Your intelligent AI assistant.
+
+            </p>
+
+        </div>
+
+
+        <div id="chatBox"></div>
+
+
+    </section>
+
+
+
+    <!-- INPUT -->
+
+    <div class="input-container">
+
+        <input
+            type="text"
+            id="userInput"
+            placeholder="Ask LORDZ AI anything..."
+            autocomplete="off">
+
+
+        <button
+            class="send-button"
+            onclick="sendMessage()">
+
+            SEND
+
+        </button>
+
+    </div>
+
+
+</div>
+
+
+
+<!-- =====================================
+     LOGIN / SIGNUP MODAL
+===================================== -->
+
+<div
+    class="modal"
+    id="accountModal">
+
+
+    <div class="modal-box">
+
+
+        <h2 id="modalTitle">
+
+            LOGIN
+
+        </h2>
+
+
+        <input
+            type="text"
+            id="nameInput"
+            placeholder="Your name"
+            style="display:none;">
+
+
+        <input
+            type="email"
+            id="emailInput"
+            placeholder="Email">
+
+
+        <input
+            type="password"
+            id="passwordInput"
+            placeholder="Password">
+
+
+        <button
+            onclick="submitAccount()">
+
+            CONTINUE
+
+        </button>
+
+
+        <div
+            class="close"
+            onclick="closeModal()">
+
+            Cancel
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<script>
+
+/* =========================================
+   ACCOUNT SYSTEM
+========================================= */
+
+let accountMode = "login";
+
+
+/* Open login/signup */
+
+function openModal(mode) {
+
+    accountMode = mode;
+
+    const modal =
+        document.getElementById("accountModal");
+
+    const title =
+        document.getElementById("modalTitle");
+
+    const nameInput =
+        document.getElementById("nameInput");
+
+
+    modal.style.display = "flex";
+
+
+    if (mode === "signup") {
+
+        title.innerText = "CREATE ACCOUNT";
+
+        nameInput.style.display = "block";
+
+    } else {
+
+        title.innerText = "LOGIN";
+
+        nameInput.style.display = "none";
+    }
+}
+
+
+/* Close */
+
+function closeModal() {
+
+    document.getElementById(
+        "accountModal"
+    ).style.display = "none";
+}
+
+
+/* Login / Signup */
+
+function submitAccount() {
+
+    const name =
+        document.getElementById(
+            "nameInput"
+        ).value.trim();
+
+
+    const email =
+        document.getElementById(
+            "emailInput"
+        ).value.trim();
+
+
+    if (accountMode === "signup" && name === "") {
+
+        alert("Please enter your name.");
+
+        return;
+    }
+
+
+    if (email === "") {
+
+        alert("Please enter your email.");
+
+        return;
+    }
+
+
+    let profileName;
+
+
+    if (accountMode === "signup") {
+
+        profileName = name;
+
+    } else {
+
+        profileName =
+            email.split("@")[0];
+    }
+
+
+    /* Save locally */
+
+    localStorage.setItem(
+        "lordzUser",
+        profileName
+    );
+
+
+    showProfile(profileName);
+
+    closeModal();
+}
+
+
+/* =========================================
+   SHOW PROFILE
+========================================= */
+
+function showProfile(name) {
+
+    document.getElementById(
+        "guestButtons"
+    ).style.display = "none";
+
+
+    document.getElementById(
+        "profile"
+    ).style.display = "flex";
+
+
+    document.getElementById(
+        "profileName"
+    ).innerText = name;
+
+
+    document.getElementById(
+        "profileAvatar"
+    ).innerText =
+        name.charAt(0).toUpperCase();
+}
+
+
+/* =========================================
+   LOGOUT
+========================================= */
+
+function logout() {
+
+    localStorage.removeItem(
+        "lordzUser"
+    );
+
+
+    document.getElementById(
+        "guestButtons"
+    ).style.display = "block";
+
+
+    document.getElementById(
+        "profile"
+    ).style.display = "none";
+
+
+    document.getElementById(
+        "profileMenu"
+    ).style.display = "none";
+}
+
+
+/* =========================================
+   PROFILE MENU
+========================================= */
+
+function toggleProfileMenu() {
+
+    const menu =
+        document.getElementById(
+            "profileMenu"
+        );
+
+
+    if (menu.style.display === "block") {
+
+        menu.style.display = "none";
+
+    } else {
+
+        menu.style.display = "block";
+    }
+}
+
+
+/* =========================================
+   CHECK SAVED USER
+========================================= */
+
+window.addEventListener(
+    "load",
+    function() {
+
+        const savedUser =
+            localStorage.getItem(
+                "lordzUser"
+            );
+
+
+        if (savedUser) {
+
+            showProfile(savedUser);
+
+        }
+
+    }
+);
+
+
+/* =========================================
+   AI CHAT DEMO
+========================================= */
+
+function sendMessage() {
+
+    const input =
+        document.getElementById(
+            "userInput"
+        );
+
+
+    const text =
+        input.value.trim();
+
+
+    if (!text) return;
+
+
+    addMessage(
+        text,
+        "user"
+    );
+
+
+    input.value = "";
+
+
+    setTimeout(
+        function() {
+
+            let reply =
+                getAIResponse(text);
+
+
+            addMessage(
+                reply,
+                "ai"
+            );
+
+        },
+        700
+    );
+}
+
+
+/* Add message */
+
+function addMessage(
+    text,
+    type
+) {
+
+    const chat =
+        document.getElementById(
+            "chatBox"
+        );
+
+
+    const message =
+        document.createElement(
+            "div"
+        );
+
+
+    message.className =
+        "message " + type;
+
+
+    message.innerText =
+        text;
+
+
+    chat.appendChild(
+        message
+    );
+
+
+    const area =
+        document.querySelector(
+            ".chat-area"
+        );
+
+
+    area.scrollTop =
+        area.scrollHeight;
+}
+
+
+/* Demo AI */
+
+function getAIResponse(text) {
+
+    const message =
+        text.toLowerCase();
+
+
+    if (
+        message.includes("hello") ||
+        message.includes("hi")
+    ) {
+
+        return "Hello! I am LORDZ AI. How can I help you?";
+    }
+
+
+    if (
+        message.includes("who are you")
+    ) {
+
+        return "I am LORDZ AI, created by Swastik Saxena.";
+    }
+
+
+    if (
+        message.includes("lordz")
+    ) {
+
+        return "LORDZ AI is your intelligent AI assistant.";
+    }
+
+
+    if (
+        message.includes("time")
+    ) {
+
+        return "Current time: " +
+            new Date().toLocaleTimeString();
+    }
+
+
+    if (
+        message.includes("date")
+    ) {
+
+        return "Today's date: " +
+            new Date().toLocaleDateString();
+    }
+
+
+    return "I am LORDZ AI. Connect me to a real AI backend to get intelligent answers.";
+}
+
+
+/* Enter key */
+
+document.getElementById(
+    "userInput"
+).addEventListener(
+    "keydown",
+    function(event) {
+
+        if (event.key === "Enter") {
+
+            sendMessage();
+
+        }
+
+    }
+);
+
+</script>
+
+
+</body>
+
+  </html>
