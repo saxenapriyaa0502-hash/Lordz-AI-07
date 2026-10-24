@@ -97,6 +97,40 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
 .legal-link { color: #777; font-size: 12px; text-decoration: none; }
 .legal-link:hover { color: #E50914; }
 
+
+.user { white-space: pre-wrap; }
+.message p { margin: 6px 0; }
+.message h3 { margin: 12px 0 6px; font-size: 17px; }
+.message ul, .message ol { margin: 8px 0 8px 22px; }
+.message pre { background: #0b0b0b; border: 1px solid #2a2a2a; border-radius: 10px; padding: 12px; overflow-x: auto; margin: 10px 0; font-size: 13px; }
+.message code { background: #222; padding: 2px 6px; border-radius: 5px; font-family: monospace; font-size: 13px; }
+.message pre code { background: none; padding: 0; }
+.message img.thumb { max-width: 160px; max-height: 160px; border-radius: 10px; display: block; margin-bottom: 8px; }
+.acts { display: flex; gap: 6px; margin-top: 10px; }
+.act, .attach-btn { background: #101010; border: 1px solid #2a2a2a; color: #999; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.act { width: 34px; height: 34px; }
+.attach-btn { width: 52px; height: 52px; border-color: #333; color: #ddd; }
+.act:hover, .attach-btn:hover { color: #E50914; border-color: #E50914; }
+.act svg { width: 17px; height: 17px; }
+.attach-btn svg { width: 22px; height: 22px; }
+.act svg, .attach-btn svg { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#chips { position: fixed; bottom: 78px; left: 50%; transform: translateX(-50%); width: min(900px, 92%); display: flex; gap: 8px; flex-wrap: wrap; z-index: 50; }
+.chip { background: #151515; border: 1px solid #333; border-radius: 20px; padding: 6px 12px; font-size: 12px; color: #ddd; }
+.chip b { color: #E50914; cursor: pointer; margin-left: 8px; }
+
+#hist { position: fixed; top: 72px; left: 0; bottom: 0; width: min(290px, 85%); background: #0c0c0c; border-right: 1px solid #222; transform: translateX(-105%); transition: .25s; z-index: 90; padding: 14px; overflow-y: auto; }
+#hist.open { transform: none; }
+.hist-item { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #ddd; }
+.hist-item:hover { background: #1a1a1a; }
+.hist-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.hist-item b { color: #777; padding: 0 6px; }
+.newchat { width: 100%; padding: 11px; margin-bottom: 10px; border: 1px solid #E50914; background: transparent; color: #fff; border-radius: 8px; cursor: pointer; }
+.newchat:hover { background: #E50914; }
+#sugs { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+.sug { background: #111; border: 1px solid #2a2a2a; color: #ccc; padding: 10px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+.sug:hover { border-color: #E50914; color: #fff; }
+.attach-btn.on { color: #E50914; border-color: #E50914; }
+
 /* MODAL */
 .modal { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); justify-content: center; align-items: center; }
 .modal-box { width: min(400px, 90%); background: #111; border: 1px solid #333; border-radius: 15px; padding: 30px; box-shadow: 0 0 40px rgba(229,9,20,0.2); }
@@ -137,7 +171,10 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
 
 <div id="app">
     <header class="top-bar">
-        <div class="brand">LORDZ <span>AI</span></div>
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="act" onclick="toggleHist()" title="Chats"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+            <div class="brand">LORDZ <span>AI</span></div>
+        </div>
         <div class="account-area">
             <div id="guestButtons">
                 <button class="account-button" onclick="openModal('login')">LOGIN</button>
@@ -158,12 +195,23 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
             <h1>Welcome to <span>LORDZ AI</span></h1>
             <p>Your intelligent AI assistant.</p>
             <p style="margin-top:6px;"><a class="legal-link" href="/privacy.html">Privacy Policy</a></p>
+            <div id="sugs">
+                <button class="sug" onclick="useSug(this.innerText)">Explain quantum computing simply</button>
+                <button class="sug" onclick="useSug(this.innerText)">Write a Python program to sort a list</button>
+                <button class="sug" onclick="useSug(this.innerText)">Give me 5 tips to study better</button>
+                <button class="sug" onclick="useSug(this.innerText)">Translate "good morning" into Hindi</button>
+            </div>
         </div>
         <div id="chatBox"></div>
     </section>
 
+    <div id="hist"><button class="newchat" onclick="newChat()">+ New chat</button><div id="histList"></div></div>
+    <div id="chips"></div>
     <div class="input-container">
+        <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach photos or files"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 01-7.8-7.8l9-9a3.7 3.7 0 015.2 5.2l-9 9a1.8 1.8 0 01-2.6-2.6l8.3-8.3"/></svg></button>
+        <input type="file" id="fileInput" accept="image/*,application/pdf,text/*,.txt,.md,.csv,.json,.js,.py,.html" multiple hidden>
         <input type="text" id="userInput" placeholder="Ask LORDZ AI anything..." autocomplete="off">
+        <button class="attach-btn" id="micBtn" onclick="mic()" title="Speak"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
         <button class="send-button" onclick="sendMessage()">SEND</button>
     </div>
 </div>
@@ -246,91 +294,83 @@ window.addEventListener("load", function() {
     });
 });
 
+let pending = [];
+const ICON = {
+  regen: '<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7"/></svg>',
+  copy: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 012-2h10"/></svg>',
+  flag: '<svg viewBox="0 0 24 24"><path d="M5 21V4m0 0h12l-2 4 2 4H5"/></svg>',
+  ok: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>'
+};
+
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+function md(t) {
+  const blocks = [];
+  t = esc(t).replace(/```(\w*)\n?([\s\S]*?)```/g, (m, l, c) => { blocks.push('<pre><code>' + c.replace(/\n$/, '') + '</code></pre>'); return '\u0000' + (blocks.length - 1) + '\u0000'; });
+  t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
+  const out = []; let list = null;
+  for (const line of t.split('\n')) {
+    let m;
+    if ((m = line.match(/^\s*[-*]\s+(.*)/))) { if (list !== 'ul') { if (list) out.push('</' + list + '>'); out.push('<ul>'); list = 'ul'; } out.push('<li>' + m[1] + '</li>'); continue; }
+    if ((m = line.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== 'ol') { if (list) out.push('</' + list + '>'); out.push('<ol>'); list = 'ol'; } out.push('<li>' + m[1] + '</li>'); continue; }
+    if (list) { out.push('</' + list + '>'); list = null; }
+    if ((m = line.match(/^#{1,3}\s+(.*)/))) out.push('<h3>' + m[1] + '</h3>');
+    else if (line.trim() !== '') out.push('<p>' + line + '</p>');
+  }
+  if (list) out.push('</' + list + '>');
+  return out.join('').replace(/\u0000(\d+)\u0000/g, (m, i) => blocks[i]);
+}
+
+function readAs(f, how) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(new Error('Could not read file'));
+    how === 'text' ? r.readAsText(f) : r.readAsDataURL(f);
+  });
+}
+
+async function addFile(f) {
+  if (pending.length >= 4) throw new Error('Maximum 4 files at a time');
+  if (f.type.startsWith('image/')) {
+    const url = await readAs(f, 'url');
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error('Not a valid image')); i.src = url; });
+    const sc = Math.min(1, 1280 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    const out = c.toDataURL('image/jpeg', 0.8);
+    pending.push({ name: f.name, kind: 'img', mime: 'image/jpeg', data: out.split(',')[1], preview: out });
+  } else if (f.type === 'application/pdf') {
+    if (f.size > 2500000) throw new Error('PDF too large (max 2.5 MB)');
+    pending.push({ name: f.name, kind: 'pdf', mime: 'application/pdf', data: (await readAs(f, 'url')).split(',')[1] });
+  } else {
+    if (f.size > 200000) throw new Error('Text file too large (max 200 KB)');
+    pending.push({ name: f.name, kind: 'text', text: await readAs(f, 'text') });
+  }
+}
+
+function renderChips() {
+  const c = document.getElementById('chips');
+  c.innerHTML = '';
+  pending.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'chip'; d.textContent = p.name;
+    const x = document.createElement('b'); x.textContent = '\u00d7';
+    x.onclick = () => { pending.splice(i, 1); renderChips(); };
+    d.appendChild(x); c.appendChild(d);
+  });
+}
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  for (const f of e.target.files) { try { await addFile(f); } catch (err) { alert(f.name + ': ' + err.message); } }
+  e.target.value = '';
+  renderChips();
+});
+
 async function sendMessage() {
-    const inputField = document.getElementById('userInput');
-    const userMessage = inputField.value.trim();
-    if (!userMessage) return;
-
-    appendMessage(userMessage, 'user');
-    inputField.value = '';
-
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'message ai';
-    loadingDiv.id = 'loadingMsg';
-    loadingDiv.innerText = 'LORDZ AI is thinking...';
-    document.getElementById('chatBox').appendChild(loadingDiv);
-
-    const chatArea = document.querySelector('.chat-area');
-    chatArea.scrollTop = chatArea.scrollHeight;
-
-    try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: userMessage, history: chatHistory.slice(-20) })
-        });
-
-        const data = await response.json();
-        const loader = document.getElementById('loadingMsg');
-        if (loader) loader.remove();
-
-        if (data.reply) {
-            appendMessage(data.reply, 'ai', { reportable: true, prompt: userMessage });
-            chatHistory.push({ role: 'user', content: userMessage }, { role: 'assistant', content: data.reply });
-        } else {
-            appendMessage(data.error || 'Error: Server responded without reply.', 'ai');
-        }
-    } catch (error) {
-        const loader = document.getElementById('loadingMsg');
-        if (loader) loader.remove();
-        appendMessage('Error connecting to AI backend.', 'ai');
-    }
-}
-
-function appendMessage(text, sender, opts) {
-    const chatBox = document.getElementById('chatBox');
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${sender}`;
-    msgDiv.innerText = text;
-
-    if (opts && opts.reportable) {
-        const btn = document.createElement('button');
-        btn.className = 'report-btn';
-        btn.innerText = 'Report this reply';
-        btn.onclick = () => reportMessage(btn, opts.prompt, text);
-        msgDiv.appendChild(btn);
-    }
-
-    chatBox.appendChild(msgDiv);
-
-    const chatArea = document.querySelector('.chat-area');
-    chatArea.scrollTop = chatArea.scrollHeight;
-}
-
-async function reportMessage(btn, prompt, reply) {
-    const note = window.prompt('What is wrong with this reply? (optional)', '');
-    if (note === null) return;
-    btn.disabled = true;
-    btn.innerText = 'Sending...';
-    try {
-        const res = await fetch('/api/report', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt: prompt, reply: reply, note: note })
-        });
-        const data = await res.json();
-        if (data.ok) {
-            btn.innerText = 'Reported. Thank you!';
-        } else {
-            btn.innerText = 'Could not send report. Tap to retry';
-            btn.disabled = false;
-        }
-    } catch (e) {
-        btn.innerText = 'Could not send report. Tap to retry';
-        btn.disabled = false;
-    }
-}
-</script>
-
-</body>
-</html>
+  const input = document.getElementById('userInput');
+  const msg = input.value.trim();
+  if (!msg && !pending.length) return;
+  const files = pending; pending = []; renderChips();
+  const texts = files.filter(p => p.kind === 'text').map(p => '[File: ' + p.name + ']\n' + p.text.slice(0, 20000)).join('\n\n');
+  const
