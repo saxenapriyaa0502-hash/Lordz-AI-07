@@ -91,6 +91,12 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
 .send-button { height: 52px; padding: 0 24px; border: none; border-radius: 30px; background: #E50914; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
 .send-button:hover { background: #ff1722; transform: scale(1.04); box-shadow: 0 0 20px rgba(229,9,20,0.5); }
 
+
+.report-btn { display: block; margin-top: 8px; background: none; border: none; color: #777; font-size: 12px; cursor: pointer; padding: 0; }
+.report-btn:hover { color: #E50914; }
+.legal-link { color: #777; font-size: 12px; text-decoration: none; }
+.legal-link:hover { color: #E50914; }
+
 /* MODAL */
 .modal { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); justify-content: center; align-items: center; }
 .modal-box { width: min(400px, 90%); background: #111; border: 1px solid #333; border-radius: 15px; padding: 30px; box-shadow: 0 0 40px rgba(229,9,20,0.2); }
@@ -151,6 +157,7 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
         <div class="welcome">
             <h1>Welcome to <span>LORDZ AI</span></h1>
             <p>Your intelligent AI assistant.</p>
+            <p style="margin-top:6px;"><a class="legal-link" href="/privacy.html">Privacy Policy</a></p>
         </div>
         <div id="chatBox"></div>
     </section>
@@ -169,6 +176,7 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
         <input type="password" id="passwordInput" placeholder="Password">
         <button onclick="submitAccount()">CONTINUE</button>
         <div class="close" onclick="closeModal()">Cancel</div>
+        <div class="close"><a class="legal-link" href="/privacy.html">Privacy Policy</a></div>
     </div>
 </div>
 
@@ -267,7 +275,7 @@ async function sendMessage() {
         if (loader) loader.remove();
 
         if (data.reply) {
-            appendMessage(data.reply, 'ai');
+            appendMessage(data.reply, 'ai', { reportable: true, prompt: userMessage });
             chatHistory.push({ role: 'user', content: userMessage }, { role: 'assistant', content: data.reply });
         } else {
             appendMessage(data.error || 'Error: Server responded without reply.', 'ai');
@@ -279,15 +287,48 @@ async function sendMessage() {
     }
 }
 
-function appendMessage(text, sender) {
+function appendMessage(text, sender, opts) {
     const chatBox = document.getElementById('chatBox');
     const msgDiv = document.createElement('div');
     msgDiv.className = `message ${sender}`;
     msgDiv.innerText = text;
+
+    if (opts && opts.reportable) {
+        const btn = document.createElement('button');
+        btn.className = 'report-btn';
+        btn.innerText = 'Report this reply';
+        btn.onclick = () => reportMessage(btn, opts.prompt, text);
+        msgDiv.appendChild(btn);
+    }
+
     chatBox.appendChild(msgDiv);
 
     const chatArea = document.querySelector('.chat-area');
     chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+async function reportMessage(btn, prompt, reply) {
+    const note = window.prompt('What is wrong with this reply? (optional)', '');
+    if (note === null) return;
+    btn.disabled = true;
+    btn.innerText = 'Sending...';
+    try {
+        const res = await fetch('/api/report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: prompt, reply: reply, note: note })
+        });
+        const data = await res.json();
+        if (data.ok) {
+            btn.innerText = 'Reported. Thank you!';
+        } else {
+            btn.innerText = 'Could not send report. Tap to retry';
+            btn.disabled = false;
+        }
+    } catch (e) {
+        btn.innerText = 'Could not send report. Tap to retry';
+        btn.disabled = false;
+    }
 }
 </script>
 
