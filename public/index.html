@@ -1,1 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LORDZ AI</title>
+
+<style>
+/* BASIC SETTINGS */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; }
+body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif; overflow: hidden; }
+
+/* LORDZ AI INTRO */
+#intro {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: introOut 1.2s ease 7s forwards;
+}
+.intro-content { text-align: center; width: 100%; }
+#introLogo {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    color: #E50914;
+    font-size: clamp(55px, 14vw, 150px);
+    font-weight: 900;
+    letter-spacing: -5px;
+    text-shadow: 0 0 5px #E50914, 0 0 15px #E50914, 0 0 35px #E50914;
+}
+.intro-letter {
+    opacity: 0;
+    display: inline-block;
+    transform: scale(0.1) translateY(50px);
+    filter: blur(15px);
+    animation: letterShow 0.55s cubic-bezier(.17,.67,.3,1.4) forwards;
+}
+.intro-letter:nth-child(1) { animation-delay: 0.2s; }
+.intro-letter:nth-child(2) { animation-delay: 0.7s; }
+.intro-letter:nth-child(3) { animation-delay: 1.2s; }
+.intro-letter:nth-child(4) { animation-delay: 1.7s; }
+.intro-letter:nth-child(5) { animation-delay: 2.2s; }
+
+.intro-ai { opacity: 0; margin-left: 18px; font-size: 0.55em; animation: aiShow 0.8s ease 2.7s forwards; }
+.creator { margin-top: 25px; color: #E50914; font-size: clamp(12px, 2vw, 22px); font-weight: bold; letter-spacing: 6px; opacity: 0; animation: creatorShow 1s ease 3.5s forwards; }
+
+@keyframes letterShow { 0% { opacity: 0; transform: scale(0.1) translateY(50px); filter: blur(15px); } 70% { transform: scale(1.15); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
+@keyframes aiShow { 0% { opacity: 0; transform: scale(0.2); filter: blur(20px); } 100% { opacity: 1; transform: scale(1); filter: blur(0); } }
+@keyframes creatorShow { 0% { opacity: 0; transform: translateY(20px); letter-spacing: 20px; filter: blur(10px); } 100% { opacity: 1; transform: translateY(0); letter-spacing: 6px; filter: blur(0); } }
+@keyframes introOut { to { opacity: 0; visibility: hidden; } }
+
+/* MAIN APP INTERFACE */
+#app { width: 100%; height: 100vh; background: #000; display: flex; flex-direction: column; }
+.top-bar { width: 100%; height: 72px; position: fixed; top: 0; left: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 0 25px; background: rgba(0,0,0,0.95); border-bottom: 1px solid rgba(255,255,255,0.08); }
+.brand { color: #E50914; font-size: 25px; font-weight: 900; letter-spacing: 1px; text-shadow: 0 0 8px rgba(229,9,20,0.7); cursor: pointer; user-select: none; }
+.brand span { color: white; margin-left: 4px; }
+.account-area { display: flex; align-items: center; gap: 10px; }
+.account-button { border: 1px solid #E50914; background: transparent; color: white; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-size: 13px; transition: 0.3s; }
+.account-button:hover { background: #E50914; box-shadow: 0 0 15px rgba(229,9,20,0.5); }
+.profile { display: none; align-items: center; gap: 10px; cursor: pointer; position: relative; }
+.profile-avatar { width: 40px; height: 40px; border-radius: 50%; background: #E50914; display: flex; justify-content: center; align-items: center; font-weight: bold; overflow: hidden; border: 2px solid #E50914; box-shadow: 0 0 12px rgba(229,9,20,0.5); }
+.profile-name { font-size: 14px; color: #ddd; }
+.profile-menu { display: none; position: absolute; top: 52px; right: 0; width: 170px; background: #111; border: 1px solid #333; border-radius: 10px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.7); }
+.profile-menu button { width: 100%; background: transparent; border: none; color: white; padding: 11px; text-align: left; cursor: pointer; border-radius: 6px; }
+.profile-menu button:hover { background: #222; color: #E50914; }
+
+/* CHAT AREA */
+.chat-area { width: min(900px, 92%); flex: 1; margin: 72px auto 0; padding: 20px 0 100px; overflow-y: auto; }
+.welcome { text-align: center; margin-top: 10vh; margin-bottom: 40px; }
+.welcome h1 { font-size: clamp(28px, 6vw, 55px); }
+.welcome h1 span { color: #E50914; }
+.welcome p { margin-top: 12px; color: #777; font-size: 15px; }
+
+/* MESSAGES */
+#chatBox { width: 100%; display: flex; flex-direction: column; }
+.message { max-width: 75%; padding: 13px 17px; margin: 12px 0; border-radius: 15px; line-height: 1.5; font-size: 15px; word-wrap: break-word; }
+.user { margin-left: auto; background: #E50914; color: white; border-bottom-right-radius: 4px; box-shadow: 0 0 15px rgba(229,9,20,0.15); }
+.ai { margin-right: auto; background: #151515; border: 1px solid #292929; color: #eee; border-bottom-left-radius: 4px; }
+
+/* INPUT */
+.input-container { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); width: min(900px, 92%); display: flex; gap: 10px; z-index: 50; }
+#userInput { flex: 1; height: 52px; border-radius: 30px; border: 1px solid #333; outline: none; background: #101010; color: white; padding: 0 20px; font-size: 15px; }
+#userInput:focus { border-color: #E50914; box-shadow: 0 0 15px rgba(229,9,20,0.2); }
+.send-button { height: 52px; padding: 0 24px; border: none; border-radius: 30px; background: #E50914; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+.send-button:hover { background: #ff1722; transform: scale(1.04); box-shadow: 0 0 20px rgba(229,9,20,0.5); }
+
+
+.report-btn { display: block; margin-top: 8px; background: none; border: none; color: #777; font-size: 12px; cursor: pointer; padding: 0; }
+.report-btn:hover { color: #E50914; }
+.legal-link { color: #777; font-size: 12px; text-decoration: none; }
+.legal-link:hover { color: #E50914; }
+
+
+.user { white-space: pre-wrap; }
+.message p { margin: 6px 0; }
+.message h3 { margin: 12px 0 6px; font-size: 17px; }
+.message ul, .message ol { margin: 8px 0 8px 22px; }
+.message pre { background: #0b0b0b; border: 1px solid #2a2a2a; border-radius: 10px; padding: 12px; overflow-x: auto; margin: 10px 0; font-size: 13px; }
+.message code { background: #222; padding: 2px 6px; border-radius: 5px; font-family: monospace; font-size: 13px; }
+.message pre code { background: none; padding: 0; }
+.message img.thumb { max-width: 160px; max-height: 160px; border-radius: 10px; display: block; margin-bottom: 8px; }
+.acts { display: flex; gap: 6px; margin-top: 10px; }
+.act, .attach-btn { background: #101010; border: 1px solid #2a2a2a; color: #999; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+.act { width: 34px; height: 34px; }
+.attach-btn { width: 52px; height: 52px; border-color: #333; color: #ddd; }
+.act:hover, .attach-btn:hover { color: #E50914; border-color: #E50914; }
+.act svg { width: 17px; height: 17px; }
+.attach-btn svg { width: 22px; height: 22px; }
+.act svg, .attach-btn svg { stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#chips { position: fixed; bottom: 78px; left: 50%; transform: translateX(-50%); width: min(900px, 92%); display: flex; gap: 8px; flex-wrap: wrap; z-index: 50; }
+.chip { background: #151515; border: 1px solid #333; border-radius: 20px; padding: 6px 12px; font-size: 12px; color: #ddd; }
+.chip b { color: #E50914; cursor: pointer; margin-left: 8px; }
+
+#hist { position: fixed; top: 72px; left: 0; bottom: 0; width: min(290px, 85%); background: #0c0c0c; border-right: 1px solid #222; transform: translateX(-105%); transition: .25s; z-index: 90; padding: 14px; overflow-y: auto; }
+#hist.open { transform: none; }
+.hist-item { display: flex; align-items: center; gap: 8px; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 14px; color: #ddd; }
+.hist-item:hover { background: #1a1a1a; }
+.hist-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.hist-item b { color: #777; padding: 0 6px; }
+.newchat { width: 100%; padding: 11px; margin-bottom: 10px; border: 1px solid #E50914; background: transparent; color: #fff; border-radius: 8px; cursor: pointer; }
+.newchat:hover { background: #E50914; }
+#sugs { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+.sug { background: #111; border: 1px solid #2a2a2a; color: #ccc; padding: 10px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+.sug:hover { border-color: #E50914; color: #fff; }
+.attach-btn.on { color: #E50914; border-color: #E50914; }
+
+/* MODAL */
+.modal { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); justify-content: center; align-items: center; }
+.modal-box { width: min(400px, 90%); background: #111; border: 1px solid #333; border-radius: 15px; padding: 30px; box-shadow: 0 0 40px rgba(229,9,20,0.2); }
+.modal-box h2 { color: #E50914; text-align: center; margin-bottom: 25px; }
+.modal-box input { width: 100%; height: 45px; margin-bottom: 12px; padding: 0 14px; border-radius: 7px; border: 1px solid #333; background: #050505; color: white; outline: none; }
+.modal-box input:focus { border-color: #E50914; }
+.modal-box button { width: 100%; height: 45px; margin-top: 8px; border: none; border-radius: 7px; background: #E50914; color: white; font-weight: bold; cursor: pointer; }
+.close { text-align: center; margin-top: 15px; color: #888; cursor: pointer; font-size: 13px; }
+.close:hover { color: white; }
+
+@media(max-width:600px) {
+    .top-bar { padding: 0 15px; }
+    .brand { font-size: 20px; }
+    .profile-name { display: none; }
+    .account-button { padding: 8px 10px; font-size: 11px; }
+    .message { max-width: 88%; }
+    .send-button { padding: 0 17px; }
+    .creator { letter-spacing: 3px; }
+}
+</style>
+</head>
+
+<body>
+
+<div id="intro">
+    <div class="intro-content">
+        <div id="introLogo">
+            <span class="intro-letter">L</span>
+            <span class="intro-letter">O</span>
+            <span class="intro-letter">R</span>
+            <span class="intro-letter">D</span>
+            <span class="intro-letter">Z</span>
+            <span class="intro-ai">AI</span>
+        </div>
+        <div class="creator">MADE BY SWASTIK SAXENA</div>
+    </div>
+</div>
+
+<div id="app">
+    <header class="top-bar">
+        <div style="display:flex;align-items:center;gap:12px">
+            <button class="act" onclick="toggleHist()" title="Chats"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+            <div class="brand">LORDZ <span>AI</span></div>
+        </div>
+        <div class="account-area">
+            <div id="guestButtons">
+                <button class="account-button" onclick="openModal('login')">LOGIN</button>
+                <button class="account-button" onclick="openModal('signup')">SIGN UP</button>
+            </div>
+            <div class="profile" id="profile" onclick="toggleProfileMenu()">
+                <div class="profile-avatar" id="profileAvatar">S</div>
+                <div class="profile-name" id="profileName">Swastik</div>
+                <div class="profile-menu" id="profileMenu">
+                    <button onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="chat-area">
+        <div class="welcome">
+            <h1>Welcome to <span>LORDZ AI</span></h1>
+            <p>Your intelligent AI assistant.</p>
+            <p style="margin-top:6px;"><a class="legal-link" href="/privacy.html">Privacy Policy</a></p>
+            <div id="sugs">
+                <button class="sug" onclick="useSug(this.innerText)">Explain quantum computing simply</button>
+                <button class="sug" onclick="useSug(this.innerText)">Write a Python program to sort a list</button>
+                <button class="sug" onclick="useSug(this.innerText)">Give me 5 tips to study better</button>
+                <button class="sug" onclick="useSug(this.innerText)">Translate "good morning" into Hindi</button>
+            </div>
+        </div>
+        <div id="chatBox"></div>
+    </section>
+
+    <div id="hist"><button class="newchat" onclick="newChat()">+ New chat</button><div id="histList"></div></div>
+    <div id="chips"></div>
+    <div class="input-container">
+        <button class="attach-btn" onclick="document.getElementById('fileInput').click()" title="Attach photos or files"><svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 01-7.8-7.8l9-9a3.7 3.7 0 015.2 5.2l-9 9a1.8 1.8 0 01-2.6-2.6l8.3-8.3"/></svg></button>
+        <input type="file" id="fileInput" accept="image/*,application/pdf,text/*,.txt,.md,.csv,.json,.js,.py,.html" multiple hidden>
+        <input type="text" id="userInput" placeholder="Ask LORDZ AI anything..." autocomplete="off">
+        <button class="attach-btn" id="micBtn" onclick="mic()" title="Speak"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></svg></button>
+        <button class="send-button" onclick="sendMessage()">SEND</button>
+    </div>
+</div>
+
+<div class="modal" id="accountModal">
+    <div class="modal-box">
+        <h2 id="modalTitle">LOGIN</h2>
+        <input type="text" id="nameInput" placeholder="Your name" style="display:none;">
+        <input type="email" id="emailInput" placeholder="Email">
+        <input type="password" id="passwordInput" placeholder="Password">
+        <button onclick="submitAccount()">CONTINUE</button>
+        <div class="close" onclick="closeModal()">Cancel</div>
+        <div class="close"><a class="legal-link" href="/privacy.html">Privacy Policy</a></div>
+    </div>
+</div>
+
+<script src="/app.js"></script>
+
+</body>
+  </html>
 
