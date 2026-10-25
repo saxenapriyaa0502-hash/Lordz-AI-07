@@ -1,5 +1,3 @@
-// POST /api/report - receives user reports of offensive AI replies.
-// Reports are written to the Vercel Logs (search for "USER_REPORT").
 const hits = new Map();
 
 function limited(ip) {
