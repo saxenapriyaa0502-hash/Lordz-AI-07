@@ -166,7 +166,7 @@ async function ask(prompt, files, msg) {
     const loader = document.getElementById('loadingMsg');
     if (loader) loader.remove();
     if (data.reply) {
-      appendMessage(data.reply, 'ai', { reportable: true, type: true, prompt: msg, full: prompt });
+      appendMessage(data.reply, 'ai', { reportable: true, type: false, prompt: msg, full: prompt });
       chatHistory.push({ role: 'user', content: msg || '(sent a file)' }, { role: 'assistant', content: data.reply });
       saveChat();
     } else {
@@ -299,4 +299,4 @@ function mic() {
 }
 
 renderHist();
-  
+   
