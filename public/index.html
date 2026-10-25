@@ -131,6 +131,18 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
 .sug:hover { border-color: #E50914; color: #fff; }
 .attach-btn.on { color: #E50914; border-color: #E50914; }
 
+#app { height: 100dvh; }
+#userInput { min-width: 0; }
+.input-container { bottom: calc(14px + env(safe-area-inset-bottom)); }
+@media(max-width:600px) {
+    .input-container { gap: 6px; }
+    .attach-btn { width: 42px; height: 42px; }
+    .attach-btn svg { width: 19px; height: 19px; }
+    #userInput { height: 46px; padding: 0 14px; }
+    .send-button { height: 46px; padding: 0 14px; font-size: 13px; }
+    #chips { bottom: 70px; }
+}
+
 /* MODAL */
 .modal { display: none; position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.88); justify-content: center; align-items: center; }
 .modal-box { width: min(400px, 90%); background: #111; border: 1px solid #333; border-radius: 15px; padding: 30px; box-shadow: 0 0 40px rgba(229,9,20,0.2); }
@@ -231,5 +243,5 @@ body { background: #000; color: white; font-family: Arial, Helvetica, sans-serif
 <script src="/app.js"></script>
 
 </body>
-  </html>
-
+                                           </html>
+                                           
