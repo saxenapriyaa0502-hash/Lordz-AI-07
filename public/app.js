@@ -136,10 +136,71 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
   renderChips();
 });
 
+const IMG_RE = /^(?:\/image|\/img|image:|imagine|(?:generate|create|make|draw|design)\b(?: me)?(?: an?| the)?\s*(?:image|picture|photo|logo|wallpaper|poster)\b(?: of| for)?|draw\b(?: me)?(?: an?| the)?)\s*(.*)$/i;
+
+function imgSize(p) {
+  if (/\b(landscape|wide|16:9)\b/i.test(p)) return [1280, 720];
+  if (/\b(portrait|vertical|9:16)\b/i.test(p)) return [720, 1280];
+  return [1024, 1024];
+}
+
+async function dl(url, p) {
+  try {
+    const r = await fetch(url);
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'lordz-ai-' + p.slice(0, 20).replace(/\W+/g, '-') + '.jpg';
+    a.click();
+  } catch (e) { window.open(url, '_blank'); }
+}
+
+function makeImage(p, msg, tries, quiet) {
+  tries = tries || 0;
+  const box = document.createElement('div');
+  box.className = 'message ai';
+  box.textContent = tries ? 'Retrying...' : 'Creating your image...';
+  document.getElementById('chatBox').appendChild(box);
+  scrollEnd();
+  const sz = imgSize(p);
+  const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(p) + '?model=flux&enhance=true&nologo=true&width=' + sz[0] + '&height=' + sz[1] + '&seed=' + Math.floor(Math.random() * 1000000);
+  const im = new Image();
+  im.onload = () => {
+    box.innerHTML = '';
+    im.style.cssText = 'max-width:100%;border-radius:12px;display:block';
+    const row = document.createElement('div');
+    row.className = 'acts';
+    row.style.flexWrap = 'wrap';
+    const add = (label, fn) => { const b = document.createElement('button'); b.className = 'sug'; b.textContent = label; b.onclick = fn; row.appendChild(b); };
+    add('Download', () => dl(url, p));
+    add('Regenerate', () => makeImage(p, msg, 0, true));
+    ['Realistic', 'Anime', '3D render', 'Oil painting'].forEach(st => add(st, () => makeImage(p + ', ' + st.toLowerCase() + ' style', msg, 0, true)));
+    box.append(im, row);
+    if (!quiet) {
+      chatHistory.push({ role: 'user', content: msg }, { role: 'assistant', content: '[Generated an image: ' + p + ']' });
+      saveChat();
+    }
+    scrollEnd();
+  };
+  im.onerror = () => {
+    if (tries < 1) { box.remove(); setTimeout(() => makeImage(p, msg, tries + 1, quiet), 1500); }
+    else box.textContent = 'The image service is busy right now. Please try again in a moment.';
+  };
+  im.src = url;
+}
+
 async function sendMessage() {
   const input = document.getElementById('userInput');
   const msg = input.value.trim();
   if (!msg && !pending.length) return;
+  const imgReq = !pending.length && msg.match(IMG_RE);
+  if (imgReq && imgReq[1].trim()) {
+    document.getElementById('sugs').style.display = 'none';
+    appendMessage(msg, 'user');
+    input.value = '';
+    makeImage(imgReq[1].trim(), msg);
+    return;
+  }
   const files = pending; pending = []; renderChips();
   const texts = files.filter(p => p.kind === 'text').map(p => '[File: ' + p.name + ']\n' + p.text.slice(0, 20000)).join('\n\n');
   const prompt = (msg + (texts ? '\n\n' + texts : '')).trim();
@@ -298,5 +359,15 @@ function mic() {
   r.start();
 }
 
+(function () {
+  const sg = document.getElementById('sugs');
+  const b = document.createElement('button');
+  b.className = 'sug';
+  b.textContent = 'Generate an image of a futuristic city at night';
+  b.onclick = () => useSug(b.textContent);
+  sg.appendChild(b);
+})();
+
 renderHist();
-   
+
+    
