@@ -136,6 +136,20 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
   renderChips();
 });
 
+const SEARCH_RE = /\b(recommend|suggest|suggestion|video|videos|youtube|instagram|reel|reels|link|links|website|channel|latest|news|trending|search|movie|song|course|tutorial|review)\b/i;
+
+function addSources(d, sources, q) {
+  const row = document.createElement('div');
+  row.style.cssText = 'margin-top:10px;display:flex;flex-wrap:wrap;gap:8px';
+  const mk = (label, url) => { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.className = 'sug'; a.style.textDecoration = 'none'; a.textContent = label; row.appendChild(a); };
+  (sources || []).forEach(s => mk(String(s.title).slice(0, 28), s.url));
+  const e = encodeURIComponent(String(q).slice(0, 100));
+  mk('YouTube', 'https://www.youtube.com/results?search_query=' + e);
+  mk('Instagram', 'https://www.google.com/search?q=site%3Ainstagram.com+' + e);
+  mk('Google', 'https://www.google.com/search?q=' + e);
+  d.appendChild(row);
+}
+
 const IMG_RE = /^(?:\/image|\/img|image:|imagine|(?:generate|create|make|draw|design)\b(?: me)?(?: an?| the)?\s*(?:image|picture|photo|logo|wallpaper|poster)\b(?: of| for)?|draw\b(?: me)?(?: an?| the)?)\s*(.*)$/i;
 
 function imgSize(p) {
@@ -221,13 +235,13 @@ async function ask(prompt, files, msg) {
     const response = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt: prompt, history: chatHistory.slice(-20), attachments: files.filter(p => p.data).map(p => ({ mime: p.mime, data: p.data })), now: new Date().toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'long' }) })
+      body: JSON.stringify({ search: SEARCH_RE.test(msg || ''), prompt: prompt, history: chatHistory.slice(-20), attachments: files.filter(p => p.data).map(p => ({ mime: p.mime, data: p.data })), now: new Date().toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'long' }) })
     });
     const data = await response.json();
     const loader = document.getElementById('loadingMsg');
     if (loader) loader.remove();
     if (data.reply) {
-      appendMessage(data.reply, 'ai', { reportable: true, type: false, prompt: msg, full: prompt });
+      appendMessage(data.reply, 'ai', { reportable: true, type: false, prompt: msg, full: prompt, search: SEARCH_RE.test(msg || ''), sources: data.sources });
       chatHistory.push({ role: 'user', content: msg || '(sent a file)' }, { role: 'assistant', content: data.reply });
       saveChat();
     } else {
@@ -253,6 +267,7 @@ function appendMessage(text, sender, opts) {
   const d = document.createElement('div');
   d.className = 'message ' + sender;
   if (sender === 'ai') d.innerHTML = opts.type ? '' : md(text); else d.textContent = text;
+  if (sender === 'ai' && opts.search) addSources(d, opts.sources, opts.prompt || text.slice(0, 80));
   if (opts.files && opts.files.length) {
     const s = document.createElement('div');
     s.style.cssText = 'font-size:12px;opacity:.85;margin-bottom:6px';
