@@ -206,4 +206,4 @@ function makeImage(p, msg, tries, quiet) {
 
 // part 2 (kept in a separate file so each file stays small)
 document.write('<script src="/app2.js"><\/script>');
-                                                      
+                     
