@@ -1,4 +1,54 @@
-function speak(text, btn) {
+let ttsAudio = null, ttsStop = false;
+
+function playPcm(b64) {
+  return new Promise((res, rej) => {
+    const bin = atob(b64), n = bin.length, buf = new ArrayBuffer(44 + n), v = new DataView(buf);
+    const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, 24000, true); v.setUint32(28, 48000, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n, true);
+    for (let i = 0; i < n; i++) v.setUint8(44 + i, bin.charCodeAt(i));
+    const a = new Audio(URL.createObjectURL(new Blob([buf], { type: 'audio/wav' })));
+    ttsAudio = a; a.onended = res; a.onerror = () => rej(new Error('play')); a.play().catch(rej);
+  });
+}
+
+function splitText(t) {
+  const out = [];
+  while (t.length) {
+    let cut = t.slice(0, 450), k = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('\n'), cut.lastIndexOf('? '), cut.lastIndexOf('\u0964'));
+    const end = (t.length <= 450 || k < 150) ? Math.min(450, t.length) : k + 1;
+    out.push(t.slice(0, end).trim());
+    t = t.slice(end);
+  }
+  return out.filter(Boolean);
+}
+
+async function speak(text, btn) {
+  if (ttsAudio || (window.speechSynthesis && speechSynthesis.speaking)) {
+    ttsStop = true;
+    const a = ttsAudio;
+    if (a) { a.pause(); if (a.onended) a.onended(); }
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    btn.style.color = '';
+    return;
+  }
+  ttsStop = false;
+  btn.style.color = '#E50914';
+  const clean = text.replace(/[`*#]/g, '');
+  try {
+    for (const p of splitText(clean)) {
+      if (ttsStop) break;
+      const r = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: p }) });
+      const j = await r.json();
+      if (!j.audio) throw new Error('no audio');
+      await playPcm(j.audio);
+    }
+  } catch (e) { if (!ttsStop) { ttsAudio = null; browserSpeak(clean, btn); return; } }
+  ttsAudio = null;
+  btn.style.color = '';
+}
+
+function browserSpeak(text, btn) {
   const s = window.speechSynthesis;
   if (!s) { alert('Voice playback is not supported in this browser.'); return; }
   if (s.speaking) { s.cancel(); btn.style.color = ''; return; }
@@ -70,7 +120,16 @@ async function sendMessage() {
   const input = document.getElementById('userInput');
   const msg = input.value.trim();
   if (!msg && !pending.length) return;
-  const rm = !pending.length && msg.match(/^(?:\/roadmap|(?:give me|make|create|generate)(?: me)?(?: a)?(?: learning| study)? roadmap(?: for| to learn| of)?)\s*(.+)$/i);
+  const kb = msg.match(/^\/(kb|ask)\b\s*([\s\S]*)/i);
+  if (kb) {
+    document.getElementById('sugs').style.display = 'none';
+    appendMessage(msg, 'user');
+    input.value = '';
+    const kf = pending; pending = []; renderChips();
+    kbCommand(kb[1].toLowerCase(), kb[2].trim(), kf);
+    return;
+  }
+  const rm = !pending.length && msg.match(/^(?:\/roadmap|(?:(?:give me|make|create|generate)(?: me)?(?: a)?(?: learning| study)? )?roadmap(?: for| to learn| of)?)\s*(.+)$/i);
   const cm = !pending.length && msg.match(/^\/chapters\s+([\s\S]+)/i);
   if (rm || cm) {
     document.getElementById('sugs').style.display = 'none';
@@ -96,6 +155,32 @@ async function sendMessage() {
   ask(prompt, files, msg);
 }
 
+const TOOL_RE = /\b(weather|temperature|forecast|calculate|calculator|time in|date in)\b|\d\s*[-+*\/^%]\s*\d/i;
+
+async function streamAsk(prompt, files, msg, loader) {
+  const r = await fetch('/api/stream', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: prompt, history: chatHistory.slice(-20), attachments: files.filter(p => p.data).map(p => ({ mime: p.mime, data: p.data })), now: new Date().toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'long' }) }) });
+  if (!r.ok || !r.body) return false;
+  const d = document.createElement('div');
+  d.className = 'message ai';
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let text = '';
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    text += dec.decode(value, { stream: true });
+    if (!d.parentNode && text.trim()) { loader.remove(); document.getElementById('chatBox').appendChild(d); }
+    d.innerHTML = md(text);
+    scrollEnd();
+  }
+  if (!text.trim()) return false;
+  addActs(d, text, { prompt: msg, full: prompt });
+  chatHistory.push({ role: 'user', content: msg || '(sent a file)' }, { role: 'assistant', content: text });
+  saveChat();
+  scrollEnd();
+  return true;
+}
+
 async function ask(prompt, files, msg) {
   const loadingDiv = document.createElement('div');
   loadingDiv.className = 'message ai';
@@ -103,6 +188,9 @@ async function ask(prompt, files, msg) {
   loadingDiv.innerText = 'LORDZ AI is thinking...';
   document.getElementById('chatBox').appendChild(loadingDiv);
   scrollEnd();
+  if (!SEARCH_RE.test(msg || '') && !TOOL_RE.test(msg || '')) {
+    try { if (await streamAsk(prompt, files, msg, loadingDiv)) return; } catch (e) {}
+  }
   try {
     const response = await fetch('/api/chat', {
       method: 'POST',
@@ -261,4 +349,3 @@ function mic() {
 
 renderHist();
 
-                                                                                                                                                                                                                                             
