@@ -170,8 +170,21 @@ async function dl(url, p) {
   } catch (e) { window.open(url, '_blank'); }
 }
 
+let lastImg = 0;
+
 function makeImage(p, msg, tries, quiet) {
   tries = tries || 0;
+  const wait = 45000 - (Date.now() - lastImg);
+  if (wait > 0 && !tries) {
+    const w = document.createElement('div');
+    w.className = 'message ai';
+    w.textContent = 'Free image limit: starting in ' + Math.ceil(wait / 1000) + ' seconds...';
+    document.getElementById('chatBox').appendChild(w);
+    scrollEnd();
+    setTimeout(() => { w.remove(); makeImage(p, msg, 0, quiet); }, wait + 200);
+    return;
+  }
+  lastImg = Date.now();
   const box = document.createElement('div');
   box.className = 'message ai';
   box.textContent = tries ? 'Retrying...' : 'Creating your image...';
@@ -202,6 +215,72 @@ function makeImage(p, msg, tries, quiet) {
     else box.textContent = 'The image service is busy right now. Please try again in a moment.';
   };
   im.src = url;
+}
+
+// ---- Knowledge base: semantic search + similarity graph, stored in this browser ----
+function botSay(t) {
+  const b = document.createElement('div');
+  b.className = 'message ai';
+  b.textContent = t;
+  document.getElementById('chatBox').appendChild(b);
+  scrollEnd();
+  return b;
+}
+
+function kbLoad() { try { return JSON.parse(localStorage.getItem('lordzKB')) || { chunks: [] }; } catch (e) { return { chunks: [] }; } }
+
+async function embed(texts) {
+  const r = await fetch('/api/embed', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texts: texts }) });
+  const j = await r.json();
+  if (!j.vectors) throw new Error(j.error || 'embedding failed');
+  return j.vectors;
+}
+
+function cos(a, b) {
+  let d = 0, x = 0, y = 0;
+  for (let i = 0; i < a.length; i++) { d += a[i] * b[i]; x += a[i] * a[i]; y += b[i] * b[i]; }
+  return d / (Math.sqrt(x * y) || 1);
+}
+
+async function kbAdd(files) {
+  const kbd = kbLoad(), fresh = [];
+  files.forEach(f => { for (let i = 0; i < f.text.length && fresh.length < 120; i += 700) fresh.push({ src: f.name, t: f.text.slice(i, i + 900) }); });
+  for (let i = 0; i < fresh.length; i += 20) {
+    const v = await embed(fresh.slice(i, i + 20).map(c => c.t));
+    v.forEach((vec, k) => { fresh[i + k].v = vec.map(x => Math.round(x * 10000) / 10000); });
+  }
+  kbd.chunks = kbd.chunks.concat(fresh).slice(-200);
+  kbd.chunks.forEach((c, i) => { c.n = kbd.chunks.map((o, j) => [j, i === j ? -1 : cos(c.v, o.v)]).filter(x => x[1] > 0.7).sort((a, b) => b[1] - a[1]).slice(0, 2).map(x => x[0]); });
+  localStorage.setItem('lordzKB', JSON.stringify(kbd));
+  return fresh.length;
+}
+
+async function kbSearch(q, kbd) {
+  const qv = (await embed([q]))[0];
+  const top = kbd.chunks.map((c, i) => [i, cos(qv, c.v)]).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+  const set = new Set(top);
+  top.forEach(i => (kbd.chunks[i].n || []).forEach(j => set.add(j)));
+  return Array.from(set).slice(0, 7).map(i => '[' + kbd.chunks[i].src + '] ' + kbd.chunks[i].t).join('\n---\n');
+}
+
+async function kbCommand(cmd, arg, files) {
+  if (cmd === 'kb') {
+    if (/^clear$/i.test(arg)) { localStorage.removeItem('lordzKB'); botSay('Knowledge base cleared.'); return; }
+    const texts = files.filter(f => f.kind === 'text');
+    if (!texts.length) { botSay('Attach a text file (.txt, .md, .csv) and send "/kb add". Then ask with "/ask your question". "/kb clear" deletes everything.'); return; }
+    const box = botSay('Reading and indexing your file...');
+    try { box.textContent = 'Added ' + (await kbAdd(texts)) + ' chunks. Now ask with /ask <question>.'; } catch (e) { box.textContent = 'Could not index the file: ' + e.message; }
+    return;
+  }
+  const kbd = kbLoad();
+  if (!arg) { botSay('Write your question after /ask.'); return; }
+  if (!kbd.chunks.length) { botSay('Knowledge base is empty. Attach a text file and send "/kb add" first.'); return; }
+  const box = botSay('Searching your knowledge base...');
+  try {
+    const ctx = await kbSearch(arg, kbd);
+    box.remove();
+    ask('<kb_context>\n' + ctx + '\n</kb_context>\nAnswer using only the context above. If the answer is not there, say you could not find it.\n\nQuestion: ' + arg, [], arg);
+  } catch (e) { box.textContent = 'Search failed: ' + e.message; }
 }
 
 // part 2 (kept in a separate file so each file stays small)
