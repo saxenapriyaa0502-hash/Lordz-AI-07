@@ -1,5 +1,5 @@
 // Vercel serverless function -> POST /api/embed
-const { handleEmbed } = require("../lib/chat");
+const { handleEmbed } = require("../lib/media");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
