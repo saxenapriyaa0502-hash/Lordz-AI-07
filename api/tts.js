@@ -1,5 +1,5 @@
 // Vercel serverless function -> POST /api/tts
-const { handleTts } = require("../lib/chat");
+const { handleTts } = require("../lib/media");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
