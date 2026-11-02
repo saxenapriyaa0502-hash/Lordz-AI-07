@@ -1,4 +1,4 @@
-let ttsAudio = null, ttsStop = false;
+let ttsAudio = null, ttsStop = false, ttsBusy = false;
 
 function playPcm(b64) {
   return new Promise((res, rej) => {
@@ -23,16 +23,17 @@ function splitText(t) {
   return out.filter(Boolean);
 }
 
+function stopSpeak(btn) {
+  ttsStop = true;
+  const a = ttsAudio;
+  if (a) { a.pause(); if (a.onended) a.onended(); }
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  btn.style.color = '';
+}
+
 async function speak(text, btn) {
-  if (ttsAudio || (window.speechSynthesis && speechSynthesis.speaking)) {
-    ttsStop = true;
-    const a = ttsAudio;
-    if (a) { a.pause(); if (a.onended) a.onended(); }
-    if (window.speechSynthesis) speechSynthesis.cancel();
-    btn.style.color = '';
-    return;
-  }
-  ttsStop = false;
+  if (ttsBusy || (window.speechSynthesis && speechSynthesis.speaking)) { stopSpeak(btn); return; }
+  ttsBusy = true; ttsStop = false;
   btn.style.color = '#E50914';
   const clean = text.replace(/[`*#]/g, '');
   try {
@@ -41,10 +42,11 @@ async function speak(text, btn) {
       const r = await fetch('/api/tts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: p }) });
       const j = await r.json();
       if (!j.audio) throw new Error('no audio');
+      if (ttsStop) break;
       await playPcm(j.audio);
     }
-  } catch (e) { if (!ttsStop) { ttsAudio = null; browserSpeak(clean, btn); return; } }
-  ttsAudio = null;
+  } catch (e) { if (!ttsStop) { ttsAudio = null; ttsBusy = false; browserSpeak(clean, btn); return; } }
+  ttsAudio = null; ttsBusy = false;
   btn.style.color = '';
 }
 
@@ -120,6 +122,14 @@ async function sendMessage() {
   const input = document.getElementById('userInput');
   const msg = input.value.trim();
   if (!msg && !pending.length) return;
+  const c2 = msg.match(/^\/(team|stats|export)\b\s*([\s\S]*)/i);
+  if (c2) {
+    document.getElementById('sugs').style.display = 'none';
+    appendMessage(msg, 'user');
+    input.value = '';
+    extraCommand(c2[1].toLowerCase(), c2[2].trim());
+    return;
+  }
   const kb = msg.match(/^\/(kb|ask)\b\s*([\s\S]*)/i);
   if (kb) {
     document.getElementById('sugs').style.display = 'none';
@@ -205,7 +215,7 @@ async function ask(prompt, files, msg) {
       chatHistory.push({ role: 'user', content: msg || '(sent a file)' }, { role: 'assistant', content: data.reply });
       saveChat();
     } else {
-      appendMessage(data.error || 'Error: Server responded without reply.', 'ai');
+      await backupAnswer(prompt, msg, data.error);
     }
   } catch (error) {
     const loader = document.getElementById('loadingMsg');
@@ -227,7 +237,7 @@ function appendMessage(text, sender, opts) {
   const d = document.createElement('div');
   d.className = 'message ' + sender;
   if (sender === 'ai') d.innerHTML = opts.type ? '' : md(text); else d.textContent = text;
-  if (sender === 'ai' && opts.search) addSources(d, opts.sources, opts.prompt || text.slice(0, 80));
+  if (sender === 'ai' && opts.search) addSources(d, opts.sources, opts.prompt || text.slice(0, 80), text);
   if (opts.files && opts.files.length) {
     const s = document.createElement('div');
     s.style.cssText = 'font-size:12px;opacity:.85;margin-bottom:6px';
@@ -265,6 +275,7 @@ function addActs(d, text, opts) {
   sp.onclick = () => speak(text, sp);
   row.append(cp, sp, rp, rg);
   d.appendChild(row);
+  addRun(d);
 }
 
 async function reportMessage(btn, prompt, reply) {
@@ -349,3 +360,5 @@ function mic() {
 
 renderHist();
 
+document.write('<script src="/app3.js"><\/script>');
+                                                                                                                                                                                                                                   
