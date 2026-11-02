@@ -76,7 +76,7 @@ function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(
 
 function md(t) {
   const blocks = [];
-  t = esc(t).replace(/```(\w*)\n?([\s\S]*?)```/g, (m, l, c) => { blocks.push('<pre><code>' + c.replace(/\n$/, '') + '</code></pre>'); return '\u0000' + (blocks.length - 1) + '\u0000'; });
+  t = esc(t).replace(/```(\w*)\n?([\s\S]*?)```/g, (m, l, c) => { blocks.push('<pre><code class="lang-' + l + '">' + c.replace(/\n$/, '') + '</code></pre>'); return '\u0000' + (blocks.length - 1) + '\u0000'; });
   t = t.replace(/`([^`\n]+)`/g, '<code>$1</code>').replace(/\*\*([^*\n]+)\*\*/g, '<b>$1</b>').replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<i>$2</i>');
   const out = []; let list = null;
   for (const line of t.split('\n')) {
@@ -139,7 +139,23 @@ document.getElementById('fileInput').addEventListener('change', async (e) => {
 
 const SEARCH_RE = /\b(recommend|suggest|suggestion|video|videos|youtube|instagram|reel|reels|link|links|website|channel|latest|news|trending|search|movie|song|course|tutorial|review)\b/i;
 
-function addSources(d, sources, q) {
+function addSources(d, sources, q, text) {
+  const ids = [];
+  String(text || '').replace(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{11})/g, (m, id) => { if (!ids.includes(id)) ids.push(id); });
+  ids.slice(0, 4).forEach(id => {
+    const a = document.createElement('a');
+    a.href = 'https://www.youtube.com/watch?v=' + id; a.target = '_blank'; a.rel = 'noopener';
+    a.style.cssText = 'display:block;margin-top:10px;text-decoration:none;color:inherit';
+    const im = new Image();
+    im.src = 'https://i.ytimg.com/vi/' + id + '/hqdefault.jpg';
+    im.style.cssText = 'width:100%;max-width:320px;border-radius:10px;display:block';
+    im.onerror = () => a.remove();
+    const t = document.createElement('div');
+    t.textContent = 'Watch on YouTube';
+    t.style.cssText = 'font-size:13px;margin-top:4px;color:#E50914';
+    a.append(im, t);
+    d.appendChild(a);
+  });
   const row = document.createElement('div');
   row.style.cssText = 'margin-top:10px;display:flex;flex-wrap:wrap;gap:8px';
   const mk = (label, url) => { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.className = 'sug'; a.style.textDecoration = 'none'; a.textContent = label; row.appendChild(a); };
@@ -172,26 +188,36 @@ async function dl(url, p) {
 
 let lastImg = 0;
 
-function makeImage(p, msg, tries, quiet) {
-  tries = tries || 0;
-  const wait = 45000 - (Date.now() - lastImg);
-  if (wait > 0 && !tries) {
-    const w = document.createElement('div');
-    w.className = 'message ai';
-    w.textContent = 'Free image limit: starting in ' + Math.ceil(wait / 1000) + ' seconds...';
-    document.getElementById('chatBox').appendChild(w);
-    scrollEnd();
-    setTimeout(() => { w.remove(); makeImage(p, msg, 0, quiet); }, wait + 200);
-    return;
+async function hordeImage(p) {
+  const h = { 'Content-Type': 'application/json', apikey: '0000000000' };
+  const r = await fetch('https://aihorde.net/api/v2/generate/async', { method: 'POST', headers: h, body: JSON.stringify({ prompt: p, params: { width: 512, height: 512, steps: 20, n: 1 }, nsfw: false, censor_nsfw: true, r2: true }) });
+  const j = await r.json();
+  if (!j.id) throw new Error('queue');
+  for (let i = 0; i < 40; i++) {
+    await new Promise(s => setTimeout(s, 3000));
+    const c = await (await fetch('https://aihorde.net/api/v2/generate/check/' + j.id)).json();
+    if (c.done) {
+      const f = await (await fetch('https://aihorde.net/api/v2/generate/status/' + j.id)).json();
+      const g = f.generations && f.generations[0];
+      if (g && g.img) return g.img;
+      throw new Error('empty');
+    }
+    if (c.faulted) break;
   }
-  lastImg = Date.now();
+  throw new Error('timeout');
+}
+
+function makeImage(p, msg, tries, quiet, viaHorde) {
+  tries = tries || 0;
+  if (!tries && !viaHorde && 45000 - (Date.now() - lastImg) > 0) viaHorde = true;
+  if (!viaHorde) lastImg = Date.now();
   const box = document.createElement('div');
   box.className = 'message ai';
   box.textContent = tries ? 'Retrying...' : 'Creating your image...';
   document.getElementById('chatBox').appendChild(box);
   scrollEnd();
   const sz = imgSize(p);
-  const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(p) + '?model=flux&enhance=true&nologo=true&width=' + sz[0] + '&height=' + sz[1] + '&seed=' + Math.floor(Math.random() * 1000000);
+  let url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(p) + '?model=flux&enhance=true&nologo=true&width=' + sz[0] + '&height=' + sz[1] + '&seed=' + Math.floor(Math.random() * 1000000);
   const im = new Image();
   im.onload = () => {
     box.innerHTML = '';
@@ -211,10 +237,15 @@ function makeImage(p, msg, tries, quiet) {
     scrollEnd();
   };
   im.onerror = () => {
-    if (tries < 1) { box.remove(); setTimeout(() => makeImage(p, msg, tries + 1, quiet), 1500); }
-    else box.textContent = 'The image service is busy right now. Please try again in a moment.';
+    if (viaHorde) { box.textContent = 'Image services are busy right now. Please try again in a minute.'; return; }
+    box.remove();
+    if (tries < 1) setTimeout(() => makeImage(p, msg, tries + 1, quiet), 1500);
+    else makeImage(p, msg, 0, quiet, true);
   };
-  im.src = url;
+  if (viaHorde) {
+    box.textContent = 'Using the backup image service (can take 1-2 minutes)...';
+    hordeImage(p).then(u => { url = u; im.src = u; }).catch(() => { box.textContent = 'Image services are busy right now. Please try again in a minute.'; });
+  } else im.src = url;
 }
 
 // ---- Knowledge base: semantic search + similarity graph, stored in this browser ----
@@ -285,4 +316,4 @@ async function kbCommand(cmd, arg, files) {
 
 // part 2 (kept in a separate file so each file stays small)
 document.write('<script src="/app2.js"><\/script>');
-    
+                  
